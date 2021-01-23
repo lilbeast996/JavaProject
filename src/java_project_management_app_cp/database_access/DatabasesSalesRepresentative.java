@@ -1,6 +1,7 @@
 package java_project_management_app_cp.database_access;
 
 import java_project_management_app_cp.MailSending;
+import java_project_management_app_cp.ProjectExceptions;
 import java_project_management_app_cp.models.Purchase;
 import java_project_management_app_cp.services.ServicesAccounts;
 import java_project_management_app_cp.models.Client;
@@ -36,8 +37,8 @@ public class DatabasesSalesRepresentative {
             ps.setString(3, ServicesAccounts.getUsername());
             ps.executeUpdate();
             refresh("select * from clients where Username = '" + ServicesAccounts.getUsername() + "'");
-        } catch (SQLException e) {
-
+        } catch (SQLException exception) {
+            ProjectExceptions.writeToFile(exception);
         }
     }
 
@@ -50,7 +51,8 @@ public class DatabasesSalesRepresentative {
             ps.setString(2, client.getPhoneNumber());
             ps.executeUpdate();
             refresh("select * from clients where Username = '" + ServicesAccounts.getUsername() + "'");
-        } catch (SQLException  e) {
+        } catch (SQLException  exception) {
+            ProjectExceptions.writeToFile(exception);
 
         }
     }
@@ -63,7 +65,8 @@ public class DatabasesSalesRepresentative {
             ps.setString(1, client.getPhoneNumber());
             ps.executeUpdate();
             refresh("select * from clients where Username = '" + ServicesAccounts.getUsername() + "'");
-        } catch (SQLException  e) {
+        } catch (SQLException  exception) {
+            ProjectExceptions.writeToFile(exception);
 
         }
     }
@@ -96,6 +99,7 @@ public class DatabasesSalesRepresentative {
             ois.writeObject(columnNames);
 
         } catch (SQLException | IOException exception) {
+            ProjectExceptions.writeToFile(exception);
 
         }
     }
@@ -126,7 +130,8 @@ public class DatabasesSalesRepresentative {
                 }
                 dos.writeBoolean(true);
             }
-        } catch (SQLException | IOException ex) {
+        } catch (SQLException | IOException exception) {
+            ProjectExceptions.writeToFile(exception);
 
         }
     }
@@ -144,7 +149,8 @@ public class DatabasesSalesRepresentative {
             ps.setString(7, purchase.getNameClient());
             ps.setString(1, purchase.getIDPurchase());
             ps.executeUpdate();
-        }catch (SQLException e){
+        }catch (SQLException exception){
+            ProjectExceptions.writeToFile(exception);
 
         }
         this.query = "update  analysis set SaledQuantity = SaledQuantity + ?  where Username = ? ";
@@ -153,7 +159,8 @@ public class DatabasesSalesRepresentative {
             ps.setString(1, String.valueOf(purchase.getQuantity()));
             ps.setString(2, ServicesAccounts.getUsername());
             ps.executeUpdate();
-        }catch (SQLException e){
+        }catch (SQLException exception){
+            ProjectExceptions.writeToFile(exception);
 
         }
     }
