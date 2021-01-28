@@ -2,8 +2,8 @@ package java_project_management_app_cp.services;
 
 public class UserType {
     private static User userType;
-    private static Admin userAdmin;
-    private static SalesRepresentative userSalesRep;
+    private static ServicesAdmin userAdmin;
+    private static ServicesSalesRepresentative userSalesRep;
 
     public static void setUserType(User userType) {
         UserType.userType = userType;
@@ -13,19 +13,19 @@ public class UserType {
         return userType;
     }
 
-    public static Admin getUserAdmin() {
+    public static ServicesAdmin getUserAdmin() {
         return userAdmin;
     }
 
-    public static void setUserAdmin(Admin userAdmin) {
+    public static void setUserAdmin(ServicesAdmin userAdmin) {
         UserType.userAdmin = userAdmin;
     }
 
-    public static SalesRepresentative getUserSalesRep() {
+    public static ServicesSalesRepresentative getUserSalesRep() {
         return userSalesRep;
     }
 
-    public static void setUserSalesRep(SalesRepresentative userSalesRep) {
+    public static void setUserSalesRep(ServicesSalesRepresentative userSalesRep) {
         UserType.userSalesRep = userSalesRep;
     }
 }

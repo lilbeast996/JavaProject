@@ -13,6 +13,8 @@ import java.sql.*;
 import java.util.Random;
 import java.util.Vector;
 
+import static java_project_management_app_cp.ProjectExceptions.writeToFile;
+
 public class DatabasesAdmin {
     private String  query;
     private Connection connection;
@@ -21,13 +23,13 @@ public class DatabasesAdmin {
     private static DataOutputStream outputStream;
     private static DataInputStream inputStream;
 
-    public DatabasesAdmin(Connection connection, DataOutputStream outputStream, DataInputStream inputStream) {
-        this.connection = connection;
+    public DatabasesAdmin(DataOutputStream outputStream, DataInputStream inputStream) {
         this.outputStream = outputStream;
         this.inputStream = inputStream;
     }
 
     public void refresh(String query){
+        connection = connect();
         String executeQuery = query;
         try {
             preparedStatement = connection.prepareStatement(executeQuery);
@@ -64,6 +66,7 @@ public class DatabasesAdmin {
     }
 
     public void addProduct(Product product){
+        connection = connect();
         this.query = "insert into products ( Brand, Model, Price, Quantity) values (  ?, ?, ?, ?);";
         try {
             preparedStatement = connection.prepareStatement(query);
@@ -81,6 +84,7 @@ public class DatabasesAdmin {
     }
 
     public void deleteProduct(Product product){
+        connection = connect();
         this.query = "delete from products where Model = ?";
         try{
             preparedStatement = connection.prepareStatement(query);
@@ -94,7 +98,8 @@ public class DatabasesAdmin {
         }
     }
 
-    public void updateProduct(Product product){
+    public synchronized void updateProduct(Product product){
+        connection = connect();
         this.query = "update  products set Brand =  ?, Price = ? , Quantity = ? where Model = ?";
         try {
             preparedStatement = connection.prepareStatement(query);
@@ -112,6 +117,7 @@ public class DatabasesAdmin {
     }
 
     public void addSr(SalesRep salesRep) {
+        connection = connect();
         byte[] array = new byte[7];
         new Random().nextBytes(array);
         String generatedPassword = new String(array, Charset.forName("UTF-8"));
@@ -138,6 +144,7 @@ public class DatabasesAdmin {
     }
 
     public void deleteSr(SalesRep salesRep){
+        connection = connect();
         this.query = "delete from sales_representative where Username = ?;";
         try {
             preparedStatement = connection.prepareStatement(query);
@@ -152,7 +159,8 @@ public class DatabasesAdmin {
         }
     }
 
-    public void updateSr(SalesRep salesRep ){
+    public synchronized void updateSr(SalesRep salesRep ){
+        connection = connect();
         this.query = "update  sales_representative set Name = ?, PhoneNumber = ?, NameFirm = ? where Username = ?";
         try {
             preparedStatement = connection.prepareStatement(query);
@@ -185,6 +193,15 @@ public class DatabasesAdmin {
                 connection.close();
             } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
         }
+    }
+
+    private  Connection connect () {
+        try {
+            return DriverManager.getConnection("jdbc:mysql://127.0.0.1/db_sap_solution", "root", "");
+        } catch (SQLException sqlException) {
+            writeToFile(sqlException);
+        }
+        return null;
     }
 
 }

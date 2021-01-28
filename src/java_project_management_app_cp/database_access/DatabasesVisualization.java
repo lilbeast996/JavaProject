@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import static java_project_management_app_cp.ProjectExceptions.writeToFile;
+
 public class DatabasesVisualization {
     private Connection connection;
     private static DataInputStream inputStream;
@@ -20,13 +22,13 @@ public class DatabasesVisualization {
     private Statement statement;
     private ResultSet resultSet;
 
-    public DatabasesVisualization(Connection connection, DataInputStream inputStream, DataOutputStream outputStream) {
-        this.connection = connection;
+    public DatabasesVisualization( DataInputStream inputStream, DataOutputStream outputStream) {
         this.outputStream = outputStream;
         this.inputStream = inputStream;
     }
 
     public void getAllNames(){
+        connection = connect();
         String query = null;
         List<String> names = new ArrayList<>();
         try {
@@ -52,6 +54,7 @@ public class DatabasesVisualization {
     }
 
     public void createDataSetForChart(){
+        connection = connect();
         DefaultCategoryDataset dataset = null;
         try {
             statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
@@ -74,6 +77,7 @@ public class DatabasesVisualization {
     }
 
     public void getAllProducts(){
+        connection = connect();
         String query = null;
         List<String> products = new ArrayList<>();
 
@@ -90,6 +94,7 @@ public class DatabasesVisualization {
             String[] possibleProducts = products.toArray(new String[products.size()]);
             ObjectOutputStream oos = new ObjectOutputStream(outputStream);
             oos.writeObject(possibleProducts);
+
         } catch (SQLException exception) {
             ProjectExceptions.writeToFile(exception);
         } catch (IOException exception) {
@@ -100,10 +105,11 @@ public class DatabasesVisualization {
     }
 
     public void getAllPurchases(){
+        connection = connect();
         String query = null;
-        HashSet<String> purchase = new HashSet<>();
+        List<String> purchase = new ArrayList<>();
         try {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             query = ("SELECT * FROM purchase where Username = '" + ServicesAccounts.getUsername() + "'");
             resultSet = statement.executeQuery(query);
             resultSet.beforeFirst();
@@ -111,8 +117,10 @@ public class DatabasesVisualization {
                 String row = resultSet.getString("IDPurchase");
                 purchase.add(row);
             }
+            String[] possiblePurchases = purchase.toArray(new String[purchase.size()]);
             ObjectOutputStream oos = new ObjectOutputStream(outputStream);
-            oos.writeObject(purchase);
+            oos.writeObject(possiblePurchases);
+
         } catch (SQLException exception) {
             ProjectExceptions.writeToFile(exception);
         } catch (IOException exception) {
@@ -123,12 +131,13 @@ public class DatabasesVisualization {
     }
 
     public void getAllClients() {
+        connection = connect();
         String query = null;
         String row = null;
 
         List<String> clients = new ArrayList<>();
         try {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
             query = ("SELECT * FROM clients where Username ='" + ServicesAccounts.getUsername() + "'");
             resultSet = statement.executeQuery(query);
             resultSet.beforeFirst();
@@ -139,6 +148,7 @@ public class DatabasesVisualization {
             String[] possibleNames = clients.toArray(new String[clients.size()]);
             ObjectOutputStream oos = new ObjectOutputStream(outputStream);
             oos.writeObject(possibleNames);
+
         } catch (SQLException exception) {
             ProjectExceptions.writeToFile(exception);
         } catch (IOException exception) {
@@ -164,5 +174,14 @@ public class DatabasesVisualization {
                 connection.close();
             } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
         }
+    }
+
+    private  Connection connect () {
+        try {
+            return DriverManager.getConnection("jdbc:mysql://127.0.0.1/db_sap_solution", "root", "");
+        } catch (SQLException sqlException) {
+            writeToFile(sqlException);
+        }
+        return null;
     }
 }

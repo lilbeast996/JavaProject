@@ -13,7 +13,7 @@ import java.sql.*;
 
 import static java_project_management_app_cp.ProjectExceptions.writeToFile;
 
-public class ServicesSalesRepresentative implements SalesRepresentative {
+public class ServicesSalesRepresentative implements User {
     private String query;
     private Connection connection;
     private DataInputStream inputStream;
@@ -30,9 +30,8 @@ public class ServicesSalesRepresentative implements SalesRepresentative {
 
     @Override
     public void add() {
-        connection = connect();
         Client client = new Client();
-        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative(connection, outputStream, inputStream);
+        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative(outputStream, inputStream);
         try {
             client.setName(inputStream.readUTF());
             client.setPhoneNumber(inputStream.readUTF());
@@ -45,9 +44,8 @@ public class ServicesSalesRepresentative implements SalesRepresentative {
 
     @Override
     public void delete() {
-        connection = connect();
         Client client = new Client();
-        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative(connection, outputStream, inputStream);
+        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative( outputStream, inputStream);
         try {
             client.setName(inputStream.readUTF());
             client.setPhoneNumber(inputStream.readUTF());
@@ -59,9 +57,8 @@ public class ServicesSalesRepresentative implements SalesRepresentative {
 
     @Override
     public void update() {
-        connection = connect();
         Client client = new Client();
-        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative(connection, outputStream, inputStream);
+        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative( outputStream, inputStream);
         try {
             client.setName(inputStream.readUTF());
             client.setPhoneNumber(inputStream.readUTF());
@@ -73,16 +70,14 @@ public class ServicesSalesRepresentative implements SalesRepresentative {
 
     @Override
     public void refresh() {
-        connection = connect();
         this.query = "select * from clients where Username = '" + ServicesAccounts.getUsername() + "'";
-        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative(connection, outputStream, inputStream);
+        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative( outputStream, inputStream);
         repositorySr.refresh(query);
     }
 
     @Override
     public void visualize() {
-        connection = connect();
-        DatabasesVisualization repositoryVisualize = new DatabasesVisualization(connection, inputStream, outputStream);
+        DatabasesVisualization repositoryVisualize = new DatabasesVisualization(inputStream, outputStream);
         try {
             indicator = inputStream.readUTF();
         } catch (IOException exception) {
@@ -95,10 +90,9 @@ public class ServicesSalesRepresentative implements SalesRepresentative {
         }
     }
 
-    @Override
+
     public void catalog() {
-        connection = connect();
-        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative(connection, outputStream, inputStream);
+        DatabasesSalesRepresentative repositorySr = new DatabasesSalesRepresentative( outputStream, inputStream);
         Purchase purchase = new Purchase();
         try {
             indicator = inputStream.readUTF();
@@ -110,8 +104,8 @@ public class ServicesSalesRepresentative implements SalesRepresentative {
                 int newQuantity = 0;
                 String modelToChange = null;
                 try {
-                    newQuantity = inputStream.readInt();
                     modelToChange = inputStream.readUTF();
+                    newQuantity = inputStream.readInt();
                 }catch (IOException exception){
                     ProjectExceptions.writeToFile(exception);
                 }
@@ -127,6 +121,26 @@ public class ServicesSalesRepresentative implements SalesRepresentative {
                     ProjectExceptions.writeToFile(exception);
                 }
                 repositorySr.pressButtonCatalogAdd(purchase); break;
+            case "showSpecificPurchase":
+                try {
+                    this.query = "select IDPurchase, Brand, Model, Username, TimeOfBuying, SaledQuantity, NameClient from purchase where Username = '" + ServicesAccounts.getUsername()
+                            + "' AND IDPurchase = " + inputStream.readUTF();
+                } catch (IOException exception) {
+                    writeToFile(exception);
+                }
+                repositorySr.refresh(this.query); break;
+            case "showAll":
+                this.query = "select IDPurchase, Brand, Model, Username, TimeOfBuying, SaledQuantity, NameClient from purchase where Username = '" + ServicesAccounts.getUsername() + "'";
+                repositorySr.refresh(this.query); break;
+            case "deleteSpecificPurchase":
+                String purchaseID = null;
+                try{
+                    purchaseID = inputStream.readUTF();
+                }catch (IOException exception){
+                    ProjectExceptions.writeToFile(exception);
+                }
+                repositorySr.deletePurchase(purchaseID);
+                break;
         }
     }
 

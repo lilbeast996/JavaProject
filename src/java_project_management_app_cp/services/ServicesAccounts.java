@@ -18,10 +18,12 @@ import static java_project_management_app_cp.ProjectExceptions.writeToFile;
 
 public class ServicesAccounts {
     private Connection connection;
+    private Statement statement;;
+    private ResultSet resultSet;
     private static String username;
     private static DataInputStream inputStream;
     private static DataOutputStream outputStream;
-    private static String user;
+    private static String userType;
 
     public ServicesAccounts(DataInputStream inputStream, DataOutputStream outputStream){
         this.inputStream = inputStream;
@@ -30,8 +32,6 @@ public class ServicesAccounts {
 
     public boolean authenticateUser(String inputUser, String inputPass) {
         String query = null;
-        Statement statement = null;
-        ResultSet resultSet = null;
         connection = connect();
         try {
             statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
@@ -43,42 +43,27 @@ public class ServicesAccounts {
                 ServicesAdmin admin = new ServicesAdmin(inputStream, outputStream);
                 UserType.setUserType(admin);
                 UserType.setUserAdmin(admin);
-                user = "admin";
+                userType = "admin";
             }else{
                 ServicesSalesRepresentative salesRepresentative = new ServicesSalesRepresentative(inputStream, outputStream);
                 UserType.setUserType(salesRepresentative);
                 UserType.setUserSalesRep(salesRepresentative);
-                user = "sr";
+                userType = "sr";
             }
             resultSet.beforeFirst();
             while(resultSet.next()) {
                 String salt = resultSet.getString("Salt");
                 String calculatedHash = getEncryptedPassword(inputPass, salt);
-                if (calculatedHash.equalsIgnoreCase("errorSalt")) {
-                    return false;
-                }else if((calculatedHash.equals(resultSet.getString("Password"))) && (inputUser.equalsIgnoreCase(resultSet.getString("Username")))){
+                if((calculatedHash.equals(resultSet.getString("Password"))) && (inputUser.equalsIgnoreCase(resultSet.getString("Username")))){
                     return true;
+                }else{
+                    return false;
                 }
             }
         } catch (SQLException ex) {
             writeToFile(ex);
         }finally {
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
-            }
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
-            }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
-            }
-
+            closingConnections();
         }
         return false;
     }
@@ -89,7 +74,7 @@ public class ServicesAccounts {
         int iterations = 20000;
         if(salt == null)
         {
-            return "errorSalt";
+            return null;
         }
         byte[] saltBytes = Base64.getDecoder().decode(salt);
         KeySpec spec = new PBEKeySpec(password.toCharArray(), saltBytes, iterations, derivedKeyLength);
@@ -135,12 +120,17 @@ public class ServicesAccounts {
         if (status) {
             setUsername(inputUser);
             try {
-                outputStream.writeUTF(user);
+                outputStream.writeUTF(userType);
                 status = true;
             } catch (IOException exception) {
                writeToFile(exception);
             }
         } else {
+            try {
+                outputStream.writeUTF("unknownUser");
+            } catch (IOException exception) {
+                writeToFile(exception);
+            }
                 status = false;
         }
         return status;
@@ -163,8 +153,28 @@ public class ServicesAccounts {
         return ServicesAccounts.username;
     }
 
-    public static String getUser() {
-        return user;
+    public static String getUserType() {
+        return userType;
     }
+
+
+    private void closingConnections(){
+        if (resultSet != null) {
+            try {
+                resultSet.close();
+            } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
+        }
+        if (statement != null) {
+            try {
+                statement.close();
+            } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
+        }
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
+        }
+    }
+
 
 }

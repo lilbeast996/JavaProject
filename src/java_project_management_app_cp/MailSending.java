@@ -6,32 +6,41 @@ import javax.mail.*;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class MailSending {
 
     public void sendMail(String recipient, String model){
         Properties properties = new Properties();
-        properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.starttls.enable", "true");
-        properties.put("mail.smtp.host", "smtp.gmail.com");
-        properties.put("mail.smtp.port", "587");
-
-        String accountEmail = "secondmailproject@gmail.com";
-        String password = "Password1@";
+        fetchConfig(properties);
 
         Session session = Session.getInstance(properties, new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(accountEmail, password);
+                return new PasswordAuthentication(properties.getProperty("mail.user"), properties.getProperty("mail.password"));
             }
         });
 
-        Message message = prepareMessage(session, accountEmail, recipient, model);
+        Message message = prepareMessage(session, properties.getProperty("mail.user"), recipient, model);
 
         try {
             Transport.send(message);
         } catch (MessagingException exception) {
+            ProjectExceptions.writeToFile(exception);
+        }
+    }
+
+    private  void fetchConfig(Properties properties) {
+        Path path = Paths.get("MailProperties\\mailConfig.txt");
+        try (InputStream input = Files.newInputStream(path)) {
+            properties.load(input);
+        }
+        catch (IOException exception){
             ProjectExceptions.writeToFile(exception);
         }
     }

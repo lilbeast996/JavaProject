@@ -1,0 +1,6 @@
+mail.smtp.starttls.enable = true
+mail.smtp.port            = 587
+mail.smtp.host            = smtp.gmail.com
+mail.smtp.auth            = true
+mail.user                 = secondmailproject@gmail.com
+mail.password		  = Password1@

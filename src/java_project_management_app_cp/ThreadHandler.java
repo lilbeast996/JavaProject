@@ -11,9 +11,7 @@ class ThreadHandler extends Thread {
     private static DataInputStream inputStream;
     private static DataOutputStream outputStream;
     private String indicator;
-    private User user;
-    private Admin userAdmin;
-    private SalesRepresentative salesRepresentative;
+    private static User user;
 
     public ThreadHandler(DataInputStream inputStream, DataOutputStream outputStream) {
         this.inputStream = inputStream;
@@ -34,11 +32,6 @@ class ThreadHandler extends Thread {
                 case "login":
                     new ServicesAccounts(inputStream, outputStream).login();
                     user = UserType.getUserType();
-                    if(ServicesAccounts.getUser().equalsIgnoreCase("admin")){
-                        userAdmin = UserType.getUserAdmin();
-                    }else if(ServicesAccounts.getUser().equalsIgnoreCase("sr")){
-                        salesRepresentative = UserType.getUserSalesRep();
-                    }
                     break;
                 case "add":
                     command = new AddCommand(user);
@@ -57,7 +50,7 @@ class ThreadHandler extends Thread {
                     invokeButton(command);
                     break;
                 case "analysis":
-                    command = new AnalysisCommand(userAdmin);
+                    command = new AnalysisCommand(UserType.getUserAdmin());
                     invokeButton(command);
                     break;
                 case "visualizeComponents":
@@ -65,7 +58,7 @@ class ThreadHandler extends Thread {
                     invokeButton(command);
                     break;
                 case "catalog":
-                    command = new CatalogCommand(salesRepresentative);
+                    command = new CatalogCommand(UserType.getUserSalesRep());
                     invokeButton(command);
                     break;
             }
@@ -77,8 +70,8 @@ class ThreadHandler extends Thread {
     }
 
     private void invokeButton(Command command){
-        ButtonInvoker onPress = new ButtonInvoker(command);
-        onPress.click();
+        ButtonInvoker onClick = new ButtonInvoker(command);
+        onClick.click();
     }
 }
 

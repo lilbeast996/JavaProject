@@ -14,69 +14,78 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.Vector;
 
+import static java_project_management_app_cp.ProjectExceptions.writeToFile;
+
 public class DatabasesSalesRepresentative {
     private String query;
     private Connection connection;
+    private ResultSet resultSet;
+    private Statement statement;
+    private PreparedStatement preparedStatement;
     private static DataOutputStream dos;
     private static DataInputStream dis;
 
-    public DatabasesSalesRepresentative(Connection connection, DataOutputStream dos, DataInputStream dis) {
-        this.connection = connection;
+    public DatabasesSalesRepresentative( DataOutputStream dos, DataInputStream dis) {
         this.dos = dos;
         this.dis = dis;
     }
 
 
     public void add(Client client){
-        PreparedStatement ps = null;
+        connection = connect();
         this.query = "insert into clients ( Name, PhoneNumber, Username) values( ?, ?, ?)";
         try {
-            ps = connection.prepareStatement(query);
-            ps.setString(1, client.getName());
-            ps.setString(2, client.getPhoneNumber());
-            ps.setString(3, ServicesAccounts.getUsername());
-            ps.executeUpdate();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, client.getName());
+            preparedStatement.setString(2, client.getPhoneNumber());
+            preparedStatement.setString(3, ServicesAccounts.getUsername());
+            preparedStatement.executeUpdate();
             refresh("select * from clients where Username = '" + ServicesAccounts.getUsername() + "'");
         } catch (SQLException exception) {
             ProjectExceptions.writeToFile(exception);
+        }finally {
+            closingConnections();
         }
     }
 
-    public void update(Client client){
-        PreparedStatement ps = null;
+    public synchronized void update(Client client){
+        connection = connect();
         this.query = "update  clients set Name = ? where PhoneNumber = ? ;";
         try {
-            ps = connection.prepareStatement(query);
-            ps.setString(1, client.getName());
-            ps.setString(2, client.getPhoneNumber());
-            ps.executeUpdate();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, client.getName());
+            preparedStatement.setString(2, client.getPhoneNumber());
+            preparedStatement.executeUpdate();
             refresh("select * from clients where Username = '" + ServicesAccounts.getUsername() + "'");
         } catch (SQLException  exception) {
             ProjectExceptions.writeToFile(exception);
-
+        }finally {
+            closingConnections();
         }
     }
 
     public void delete(Client client){
-        PreparedStatement ps = null;
+        connection = connect();
         this.query = "delete from clients where PhoneNumber = ?";
         try {
-            ps = connection.prepareStatement(query);
-            ps.setString(1, client.getPhoneNumber());
-            ps.executeUpdate();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, client.getPhoneNumber());
+            preparedStatement.executeUpdate();
             refresh("select * from clients where Username = '" + ServicesAccounts.getUsername() + "'");
         } catch (SQLException  exception) {
             ProjectExceptions.writeToFile(exception);
-
+        }finally {
+            closingConnections();
         }
     }
 
     public void refresh(String query){
+        connection = connect();
         String executeQuery = query;
         try {
-            PreparedStatement statement = connection.prepareStatement(executeQuery);
-            ResultSet rs = statement.executeQuery();
-            ResultSetMetaData metaData = rs.getMetaData();
+            preparedStatement = connection.prepareStatement(executeQuery);
+            resultSet = preparedStatement.executeQuery();
+            ResultSetMetaData metaData = resultSet.getMetaData();
 
             int numberOfColumns = metaData.getColumnCount();
             Vector columnNames = new Vector();
@@ -85,39 +94,42 @@ public class DatabasesSalesRepresentative {
             }
 
             Vector rows = new Vector();
-            while (rs.next()) {
+            while (resultSet.next()) {
                 Vector newRow = new Vector();
 
                 for (int i = 1; i <= numberOfColumns; i++) {
-                    newRow.addElement(rs.getObject(i));
+                    newRow.addElement(resultSet.getObject(i));
                 }
 
                 rows.addElement(newRow);
             }
-            ObjectOutputStream ois = new ObjectOutputStream(dos);
-            ois.writeObject(rows);
-            ois.writeObject(columnNames);
-
-        } catch (SQLException | IOException exception) {
+            ObjectOutputStream objectOutputStreams = new ObjectOutputStream(dos);
+            objectOutputStreams.writeObject(rows);
+            objectOutputStreams.writeObject(columnNames);
+        } catch (SQLException  exception) {
             ProjectExceptions.writeToFile(exception);
-
+        }catch (IOException exception){
+            ProjectExceptions.writeToFile(exception);
+        }finally {
+            closingConnections();
         }
     }
 
-    public void changeQuantityProduct(int newQuantity, String model)  {
+    public synchronized void changeQuantityProduct(int newQuantity, String model)  {
+        connection = connect();
         int quantityOld = 0;
         this.query = ("SELECT * FROM products WHERE Model = '" + model + "'");
         try {
-            Statement statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = statement.executeQuery(query);
-            rs.beforeFirst();
-            while(rs.next()) {
-                quantityOld = Integer.parseInt(rs.getString("Quantity"));
+            statement = connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            resultSet = statement.executeQuery(query);
+            resultSet.beforeFirst();
+            while(resultSet.next()) {
+                quantityOld = Integer.parseInt(resultSet.getString("Quantity"));
             }
             if(quantityOld<=10){
                 new MailSending().sendMail("firstmailproject@gmail.com", model);
             }
-            if(newQuantity <=0 || newQuantity > quantityOld){
+            if( newQuantity > quantityOld){
                 dos.writeBoolean(false);
             }else{
                 String queryProductChange = "update products set Quantity = Quantity - " + String.valueOf(newQuantity)+ " where Model = '" + model + "'";
@@ -126,42 +138,95 @@ public class DatabasesSalesRepresentative {
                     statementNew = connection.createStatement();
                     statementNew.executeUpdate(queryProductChange);
                 } catch (SQLException e) {
-
+                    ProjectExceptions.writeToFile(e);
                 }
                 dos.writeBoolean(true);
             }
-        } catch (SQLException | IOException exception) {
+        } catch (SQLException exception) {
             ProjectExceptions.writeToFile(exception);
-
+        }catch (IOException exception){
+            ProjectExceptions.writeToFile(exception);
+        }finally {
+            closingConnections();
         }
     }
 
+    public void deletePurchase(String purchase){
+        connection = connect();
+        this.query = "delete from purchase where IDPurchase = ?";
+        System.out.println(this.query);
+        try{
+            connection = connect();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, purchase);
+            preparedStatement.executeUpdate();
+            refresh("select IDPurchase, Brand, Model, Username, TimeOfBuying, SaledQuantity, NameClient from purchase where Username = '" +  ServicesAccounts.getUsername() + "'");
+        } catch (SQLException exception) {
+            ProjectExceptions.writeToFile(exception);
+        }finally {
+            closingConnections();
+
+        }
+
+    }
+
     public void pressButtonCatalogAdd(Purchase purchase) {
-        PreparedStatement ps = null;
+        connection = connect();
         this.query = "insert into purchase (IDPurchase, Brand, Model, Username, TimeOfBuying, SaledQuantity, NameClient) values(?, ?, ?, ?, ?, ?, ?)";
         try {
-            ps = connection.prepareStatement(query);
-            ps.setString(2, purchase.getBrand());
-            ps.setString(3, purchase.getModel());
-            ps.setString(4, ServicesAccounts.getUsername());
-            ps.setString(5, String.valueOf(LocalDate.now()));
-            ps.setString(6, String.valueOf(purchase.getQuantity()));
-            ps.setString(7, purchase.getNameClient());
-            ps.setString(1, purchase.getIDPurchase());
-            ps.executeUpdate();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(2, purchase.getBrand());
+            preparedStatement.setString(3, purchase.getModel());
+            preparedStatement.setString(4, ServicesAccounts.getUsername());
+            preparedStatement.setString(5, String.valueOf(LocalDate.now()));
+            preparedStatement.setString(6, String.valueOf(purchase.getQuantity()));
+            preparedStatement.setString(7, purchase.getNameClient());
+            preparedStatement.setString(1, purchase.getIDPurchase());
+            preparedStatement.executeUpdate();
+            refresh("select IDPurchase, Brand, Model, Username, TimeOfBuying, SaledQuantity, NameClient from purchase where Username = '" +  ServicesAccounts.getUsername() + "'");
         }catch (SQLException exception){
             ProjectExceptions.writeToFile(exception);
 
+        }finally {
+            closingConnections();
         }
         this.query = "update  analysis set SaledQuantity = SaledQuantity + ?  where Username = ? ";
         try {
-            ps = connection.prepareStatement(query);
-            ps.setString(1, String.valueOf(purchase.getQuantity()));
-            ps.setString(2, ServicesAccounts.getUsername());
-            ps.executeUpdate();
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, String.valueOf(purchase.getQuantity()));
+            preparedStatement.setString(2, ServicesAccounts.getUsername());
+            preparedStatement.executeUpdate();
         }catch (SQLException exception){
             ProjectExceptions.writeToFile(exception);
-
+        }finally {
+            closingConnections();
         }
+    }
+
+    private void closingConnections(){
+        if (resultSet != null) {
+            try {
+                resultSet.close();
+            } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
+        }
+        if (preparedStatement != null) {
+            try {
+                preparedStatement.close();
+            } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
+        }
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException exception) { ProjectExceptions.writeToFile(exception);}
+        }
+    }
+
+    private  Connection connect () {
+        try {
+            return DriverManager.getConnection("jdbc:mysql://127.0.0.1/db_sap_solution", "root", "");
+        } catch (SQLException sqlException) {
+            writeToFile(sqlException);
+        }
+        return null;
     }
 }

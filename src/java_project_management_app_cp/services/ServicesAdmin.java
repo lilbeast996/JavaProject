@@ -15,9 +15,8 @@ import java.sql.*;
 
 import static java_project_management_app_cp.ProjectExceptions.writeToFile;
 
-public class ServicesAdmin implements Admin {
+public class ServicesAdmin implements User {
     private String query;
-    private Connection connection;
     private static DataInputStream inputStream;
     private static DataOutputStream outputStream;
     private String indicator;
@@ -31,8 +30,7 @@ public class ServicesAdmin implements Admin {
 
     @Override
     public void add() {
-        connection = connect();
-        DatabasesAdmin databasesAdmin = new DatabasesAdmin(connection, outputStream, inputStream);
+        DatabasesAdmin databasesAdmin = new DatabasesAdmin(outputStream, inputStream);
         try {
             indicator = inputStream.readUTF();
 
@@ -58,8 +56,7 @@ public class ServicesAdmin implements Admin {
 
     @Override
     public void delete() {
-        connection = connect();
-        DatabasesAdmin databasesAdmin = new DatabasesAdmin(connection, outputStream, inputStream);
+        DatabasesAdmin databasesAdmin = new DatabasesAdmin( outputStream, inputStream);
         try {
             indicator = inputStream.readUTF();
             if (indicator.equalsIgnoreCase("product")) {
@@ -84,8 +81,7 @@ public class ServicesAdmin implements Admin {
 
     @Override
     public void update() {
-        connection = connect();
-        DatabasesAdmin databasesAdmin = new DatabasesAdmin(connection, outputStream, inputStream);
+        DatabasesAdmin databasesAdmin = new DatabasesAdmin(outputStream, inputStream);
         try {
             indicator = inputStream.readUTF();
 
@@ -111,7 +107,6 @@ public class ServicesAdmin implements Admin {
 
     @Override
     public void refresh() {
-        connection = connect();
         try {
             indicator = inputStream.readUTF();
         } catch (IOException exception) {
@@ -122,12 +117,10 @@ public class ServicesAdmin implements Admin {
         } else if (indicator.equalsIgnoreCase("salesRepresentative")) {
             this.query = "select  Name, PhoneNumber, NameFirm, Username from sales_representative;";
         }
-        new DatabasesAdmin(connection, outputStream, inputStream).refresh(this.query);
+        new DatabasesAdmin( outputStream, inputStream).refresh(this.query);
     }
 
-    @Override
     public void analysis() {
-        connection = connect();
         try {
             indicator = inputStream.readUTF();
         }catch (IOException exception){
@@ -154,13 +147,12 @@ public class ServicesAdmin implements Admin {
             this.query = "SELECT Brand, Model, Username, TimeOfBuying, SaledQuantity, NameClient FROM purchase WHERE Username='" + selectedName + "'";
 
         }
-        new DatabasesAdmin(connection, outputStream, inputStream).refresh(this.query);
+        new DatabasesAdmin( outputStream, inputStream).refresh(this.query);
     }
 
     @Override
     public void visualize() {
-        connection = connect();
-        DatabasesVisualization repositoryVisualize = new DatabasesVisualization(connection, inputStream, outputStream);
+        DatabasesVisualization repositoryVisualize = new DatabasesVisualization( inputStream, outputStream);
         try {
             indicator = inputStream.readUTF();
         } catch (IOException exception) {
@@ -172,14 +164,7 @@ public class ServicesAdmin implements Admin {
         }
     }
 
-    private  Connection connect () {
-        try {
-            return DriverManager.getConnection("jdbc:mysql://127.0.0.1/db_sap_solution", "root", "");
-        } catch (SQLException sqlException) {
-            writeToFile(sqlException);
-        }
-        return null;
-    }
+
 }
 
 

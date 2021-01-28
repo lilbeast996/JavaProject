@@ -1,11 +1,11 @@
 package java_project_management_app_cp.commands;
 
-import java_project_management_app_cp.services.SalesRepresentative;
+import java_project_management_app_cp.services.ServicesSalesRepresentative;
 
 public class CatalogCommand implements Command{
-    private SalesRepresentative userType;
+    private ServicesSalesRepresentative userType;
 
-    public CatalogCommand(SalesRepresentative userType) {
+    public CatalogCommand(ServicesSalesRepresentative userType) {
         this.userType = userType;
     }
 
